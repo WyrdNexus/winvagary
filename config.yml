@@ -1,0 +1,16 @@
+project: project_name
+projects_dir: D:/dev/Projects/Downstream
+files:
+  - from: provision/.ds_bash
+    to: ~/.ds_bash
+  - from: provision/.gitconfig
+    to: ~/.gitconfig
+  - from: provision/.ds_build
+    to: ~/ds_build
+provision:
+  - test -e /usr/bin/python || apt -y install python-minimal
+  - add-apt-repository ppa:ondrej/php -y
+  - apt-get update
+  - apt -y install git wget curl vim npm unzip build-essential nodejs nginx
+  - apt -y install php7.1 php7.1-cli php7.1-fpm php7.1-cgi php7.1-common php7.1-mbstring php7.1-curl php7.1-dom php7.1-xml php7.1-mysql php7.1-intl ffmpeg imagemagick
+  - echo "colo slate" > /home/vagrant/.vimrc

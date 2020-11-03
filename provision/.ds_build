@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+if [ ! -z $1 ]; then
+  if [ ! -z $2 ] || [ $1 -eq '--help' ]; then
+    echo "Project initialization requires 2 arguments: project environment"
+    echo "    e.g.: . ~/.ds_build hsb dev"
+    return 1
+  fi
+
+  echo "Building new project from genesis:"
+  echo "  github:Downstream/$1_cms must exist, and be empty"
+  echo "  initializing new project at /var/www/$1/$2"
+
+  read -rsp $'Press any key to continue...\n' -n1 key
+
+  mkdir /var/www/$1
+  mkdir /var/www/$1
+  cd /var/www/$1
+  git clone -q git@github.com:Downstream/genesis_cms $2
+  cd $2
+  git commit -m "Cloned from genesis"
+  git remote set-url origin git@github.com:Downstream/$1_cms
+  git push
+
+  echo "Run without args after project is cloned and built to finish config and init laravel"
+  return 1
+fi
+
+choseproj() {
+  dirs=(/var/www/*/)
+
+  read -p "$(
+    f=0
+    for dirname in "${dirs[@]}" ; do
+      echo "$((++f)): $dirname"
+    done
+
+    echo -ne 'Please select a project > '
+  )" selection
+
+  return "${dirs[$((selection-1))]}"
+}
+PROJPATH=chosedir()
+
+choseenv() {
+ dirs=($PROJPATH*/)
+
+  read -p "$(
+    f=0
+    for dirname in "${dirs[@]}" ; do
+      echo "$((++f)): $dirname"
+    done
+
+    echo -ne 'Please select an environment > '
+  )" selection
+
+  return basename "${dirs[$((selection-1))]}" 
+}
+ENV=choseenv()
+PROJ=basename PROJPATH
+LNPATH=$PROJ_$ENV
+
+# Build main links
+if [ ! -d ~/admin ]; then
+  echo "Building links in ~/admin"
+  mkdir ~/admin
+  mkdir ~/admin/log
+  mkdir ~/admin/config
+  ln -s /etc/nginx/conf.d ~/admin/config/nginx
+  ln -s /etc/rabbitmq ~/admin/config/rabbitmq
+  ln -s /etc/dsreplicator ~/admin/config/dsreplicator
+  ln -s /run/php ~/admin/config/phpsock
+  ln -s /var/log/nginx/error.log ~/admin/log/nginx
+  ln -s /var/log/dsreplicator/services.log ~/admin/log/dsreplicator
+  ln -s /var/log/mysql/mysql.err ~/admin/log/mysql.err
+  ln -s /var/log/mysql/error.log ~/admin/log/myerror.log
+fi
+
+# Build project links
+if [ -d $LNPATH ]; then
+  echo "Building $LNPATH links"
+  if [ -d $PROJPATH/$ENV ]; then
+    ln -s $PROJPATH/$ENV/current ~/$LNPATH
+    ln -s ~/$LNPATH/storage/logs ~/admin/log/$LNPATH
+  fi
+fi
+
+cd ~/$LNPATH
+
+# node_modules mount
+echo "Mounting ~/$LNPATH_node_modules to ~/$LNPATH/node_modules"
+rm -rdf ~/$LNPATH/node_modules
+mkdir ~/$LNPATH/node_modules
+mkdir ~/$LNPATH_modules
+
+sudo mount -o bind ~/$LNPATH_node_modules node_modules
+
+echo "Composer"
+composer install
+
+echo "NPM"
+npm install
+npm run build
+
+# init laravel
+echo "Initialize Laravel"
+php artisan key:generate
+php artisan module:migrate
+php artisan module:seed
+
+sudo service nginx restart
+
+echo "$LNPATH is ready"
