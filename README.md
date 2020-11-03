@@ -1,10 +1,10 @@
 # Vagrant FullAuto Laravel Dev Environment
 Uses ./config.yml to configure and deploy a local VM for development. 
-Note the config defines two crical properties:
+Note the config defines two critical properties:
 * project: `project_name`
 * projects_dir: `C:/dev/Projects`
 
-Launch will look for a .env file in `C:/dev/Projects/project_name.env` from which to load all relevant configuration details. A sample is included here at `./.env-example`.
+Launch will look for a .env file in `C:/dev/Projects/project_name/.env` from which to load all relevant configuration details. A sample is included here at `./.env-example`.
 
 ## Requirements
 
